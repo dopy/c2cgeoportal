@@ -106,6 +106,7 @@ def init_cache_control(request, service_name, private=None, response=None):
             response.cache_control.private = True
     else:
         response.cache_control.private = private
+    response.cache_control.public = not response.cache_control.private
 
     max_age = request.registry.settings["default_max_age"]
 
