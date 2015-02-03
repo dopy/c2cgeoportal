@@ -36,7 +36,7 @@ from fanstatic.core import set_resource_file_existence_checking
 from pyramid_formalchemy.utils import TemplateEngine
 from formalchemy import config as fa_config
 from formalchemy import FieldSet, Grid
-from formalchemy.fields import Field, CheckBoxSet, SelectFieldRenderer
+from formalchemy.fields import Field, CheckBoxSet, SelectFieldRenderer, AttributeField
 from formalchemy.validators import ValidationError
 from formalchemy.helpers import password_field
 from geoalchemy2 import Geometry
@@ -46,6 +46,7 @@ from fa.jquery import fanstatic_resources
 from pyramid_formalchemy import events as fa_events
 from geoformalchemy.base import GeometryFieldRenderer
 from pyramid.i18n import TranslationStringFactory
+from sqlalchemy.orm.attributes import manager_of_class
 
 from c2cgeoportal import models
 from c2cgeoportal import (
@@ -400,7 +401,6 @@ LayerV1.time_mode.set(
 LayerV1.interfaces.set(renderer=CheckBoxSet)
 LayerV1.ui_metadata.set(readonly=True)
 LayerV1.restrictionareas.set(renderer=CheckBoxSet)
-#LayerV1.parents_relation.set(readonly=True)
 
 # LayerInternalWMS
 LayerInternalWMS = FieldSet(models.LayerInternalWMS)
@@ -414,7 +414,6 @@ LayerInternalWMS.time_mode.set(
 LayerInternalWMS.interfaces.set(renderer=CheckBoxSet)
 LayerInternalWMS.ui_metadata.set(readonly=True)
 LayerInternalWMS.restrictionareas.set(renderer=CheckBoxSet)
-#LayerInternalWMS.parents_relation.set(readonly=True)
 
 # LayerExternalWMS
 LayerExternalWMS = FieldSet(models.LayerExternalWMS)
@@ -428,7 +427,6 @@ LayerExternalWMS.time_mode.set(
 LayerExternalWMS.interfaces.set(renderer=CheckBoxSet)
 LayerExternalWMS.ui_metadata.set(readonly=True)
 LayerExternalWMS.restrictionareas.set(renderer=CheckBoxSet)
-#LayerExternalWMS.parents_relation.set(readonly=True)
 
 # LayerWMTS
 LayerWMTS = FieldSet(models.LayerWMTS)
@@ -437,14 +435,6 @@ LayerWMTS.interfaces.set(renderer=CheckBoxSet)
 LayerWMTS.ui_metadata.set(readonly=True)
 LayerWMTS.dimensions.set(readonly=True)
 LayerWMTS.restrictionareas.set(renderer=CheckBoxSet)
-#LayerWMTS.parents_relation.set(readonly=True)
-
-
-import types
-from functools import partial
-from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.orm.attributes import manager_of_class
-from formalchemy.fields import AttributeField
 
 
 def relation_type(self):
@@ -459,7 +449,6 @@ class ChildrenAttributeField(AttributeField):
     def sync(self):
         self.model._set_children([
             self.session.query(models.TreeItem).get(int(pk))
-            #for pk in self.renderer.deserialize()
             for pk in self.params.getall(self.name)
         ])
 
@@ -471,10 +460,7 @@ LayerGroup.append(ChildrenAttributeField(
     manager_of_class(models.LayerGroup)['children_relation'], LayerGroup
 ))
 LayerGroup.children_relation.set(renderer=TreeItemCheckBoxTreeSet)
-#LayerGroup.children_relation.relation_type = types.MethodType(relation_type, LayerGroup.children_relation)
-#LayerGroup.children_relation.sync = types.MethodType(sync, LayerGroup.children_relation)
 LayerGroup.ui_metadata.set(readonly=True)
-#LayerGroup.parents_relation.set(readonly=True)
 
 # LayergroupTreeitem
 LayergroupTreeitem = FieldSet(models.LayergroupTreeitem)
@@ -488,9 +474,6 @@ Theme.append(ChildrenAttributeField(
     manager_of_class(models.Theme)['children_relation'], Theme
 ))
 Theme.children_relation.set(renderer=TreeItemCheckBoxTreeSet)
-#Theme.children_relation.relation_type = types.MethodType(relation_type, Theme.children_relation)
-#Theme.children_relation.sync = types.MethodType(sync, Theme.children_relation)
-#Theme.children_relation.sync = partial(sync, Theme.children_relation)
 Theme.configure(exclude=[Theme.parents_relation])
 Theme.functionalities.set(renderer=FunctionalityCheckBoxTreeSet)
 Theme.interfaces.set(renderer=CheckBoxSet)
