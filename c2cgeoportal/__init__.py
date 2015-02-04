@@ -39,7 +39,7 @@ import pyramid_tm
 
 from papyrus.renderers import GeoJSON, XSD
 import simplejson as json
-
+from c2cgeoportal.resources import FAModels
 from c2cgeoportal.lib import dbreflection, get_setting, caching, \
     MultiDomainPregenerator, MultiDomainStaticURLInfo
 
@@ -267,13 +267,27 @@ def add_interface_ngeo(config, interface_name, route_name, route, renderer):  # 
     )
 
 
+def add_admin_interface(config):
+    if config.get_settings().get("enable_admin_interface", False):
+        config.formalchemy_admin(
+            name="admin",
+            package=config["package"],
+            view="fa.jquery.pyramid.ModelView",
+            factory=FAModels
+        )
+
+
 def add_static_view(config):
     """ Add the project static view """
-    from c2cgeoportal.lib.cacheversion import VersionCacheBuster
+    _add_static_view(config, 'proj', '%s:static' % config.get_settings()["package"])
 
+
+def _add_static_view(config, name, path):
+    from c2cgeoportal.lib.cacheversion import VersionCacheBuster
     config.add_static_view(
-        name='proj',
-        path='%s:static' % config.get_settings()["package"],
+        name=name,
+        path=path,
+        cache_max_age=int(config.get_settings()["default_max_age"]),
         cachebust=VersionCacheBuster()
     )
 
@@ -543,16 +557,16 @@ def includeme(config):
         ('admin_interface', 'available_metadata'),
         formalchemy_available_metadata)
 
+    config.add_route('checker_all', '/checker_all')
+
     # scan view decorator for adding routes
     config.scan(ignore='c2cgeoportal.tests')
 
     config.registry.registerUtility(
         MultiDomainStaticURLInfo(), IStaticURLInfo)
 
-    from c2cgeoportal.lib.cacheversion import VersionCacheBuster
     # add the static view (for static resources)
-    config.add_static_view(
-        name='static',
-        path='c2cgeoportal:static',
-        cachebust=VersionCacheBuster(),
-    )
+    _add_static_view(config, 'static', 'c2cgeoportal:static')
+
+    add_admin_interface(config)
+    add_static_view(config)
